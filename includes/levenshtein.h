@@ -67,7 +67,11 @@ int lev_string_dist(char const * s1, char const * s2)
 
 	line2 = (unsigned int *)malloc((max_size + 1) * sizeof(unsigned int));
 	if (!line2)
+	{
+		free(line1);
+		line1 = NULL;
 		return -ENOMEM;
+	}
 
 	for (unsigned int i = 0; i < max_size + 1; ++i)
 	{
