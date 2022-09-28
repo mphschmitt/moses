@@ -15,7 +15,91 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-int main()
+#include <stdio.h>
+#include <getopt.h>
+#include <errno.h>
+#include <limits.h>
+#include <string.h>
+
+static void usage(void)
 {
-	return 0;
+	printf(
+		"Usage: moses [options] [needle] [haystack]\n"
+		"Search for the symbol needle into haystack (a file or a folder).\n"
+		"  -h  --help       display this help message and exit\n"
+		"  -v  --version    output version information and exit\n");
+}
+
+static void version(void)
+{
+	printf(
+	"moses 1.0.0\n"
+	"\n"
+	"Copyright (C) 2022 Mathias Schmitt\n"
+	"License: GNU Affero General Public License <https://gnu.org/licenses/agpl.html>.\n"
+	"This is free software, and you are welcome to change and redistribute it.\n"
+	"This program comes with ABSOLUTELY NO WARRANTY.\n");
+}
+
+static char check_arguments(int argc, char *argv[], char ** needle,
+		char ** haystack)
+{
+	int opt;
+	char args = 0;
+	struct option long_options[] = {
+		{"help", no_argument, 0, 'h'},
+		{"version", no_argument, 0, 'v'},
+		{0, 0, 0, 0}
+	};
+
+	while ((opt = getopt_long(argc, argv, "hv", long_options, NULL)) != -1) {
+		switch (opt) {
+		case 'v':
+			if (optind < argc) {
+				usage();
+				return -EINVAL;
+			}
+			version();
+			return CHAR_MIN;
+		case 'h':
+		case '?':
+			usage();
+			return CHAR_MIN;
+		default:
+			break;
+		}
+	}
+
+	printf("optind: %d - argc: %d\n", optind, argc);
+	if (optind + 2 <= argc)
+	{
+		*needle = strndup(argv[optind], strlen(argv[optind]));
+		printf("needle: %s\n", *needle);
+		*haystack = strndup(argv[optind + 1], strlen(argv[optind + 1]));
+		printf("haystack: %s\n", *haystack);
+	}
+	else
+	{
+		usage();
+		return -EINVAL;
+	}
+
+	return args;
+}
+
+int main(int argc, char *argv[])
+{
+	char * needle = NULL;
+	char * haystack = NULL;
+	char args = 0;
+	int res = 0;
+
+	args = check_arguments(argc, argv, &needle, &haystack);
+	if (args < 0) {
+		res = (args == CHAR_MIN) ? 0 : -args;
+		goto END;
+	}
+
+END:
+	return res;
 }
