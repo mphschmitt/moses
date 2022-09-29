@@ -20,6 +20,20 @@
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+
+#define PID_CHILD 0
+#define BUF_SIZE 2048
+
+enum PFD
+{
+	PFD_READ = 0,
+	PFD_WRITE = 1
+};
+
 
 static void usage(void)
 {
@@ -84,19 +98,127 @@ static char check_arguments(int argc, char *argv[], char ** needle,
 	return args;
 }
 
+static int close_pipe_end(int fd)
+{
+	int ret = close(fd);
+	if (ret < 0)
+	{
+		printf("Error(%d): failed to close pipe entrance (fd %d): %s\n",
+			getpid(), fd, strerror(errno));
+		ret = errno;
+	}
+
+	return ret;
+}
+
+static int read_fd(int fd)
+{
+	int ret = 0;
+	ssize_t bytes = 0;
+	char buffer[BUF_SIZE] = { 0 };
+
+	while (1)
+	{
+		bytes = read(fd, buffer, sizeof(buffer));
+		if (bytes < 0)
+		{
+			printf("Error(%d): failed to read from fd %d: %s\n",
+				getpid(), fd, strerror(errno));
+			ret = errno;
+			break;
+		}
+		else if (bytes == 0)
+			break;
+
+		printf("%s", buffer);
+
+		memset(buffer, 0, sizeof(buffer));
+	}
+
+	return ret;
+}
+
 int main(int argc, char *argv[])
 {
 	char * needle = NULL;
 	char * haystack = NULL;
 	char args = 0;
-	int res = 0;
+	int ret = 0;
+	int pfds[2] = { 0 };
+	pid_t pid;
 
 	args = check_arguments(argc, argv, &needle, &haystack);
 	if (args < 0) {
-		res = (args == CHAR_MIN) ? 0 : -args;
+		ret = (args == CHAR_MIN) ? 0 : -args;
 		goto END;
 	}
 
+	ret = pipe(pfds);
+	if (ret < 0)
+	{
+		printf("Error: failed to create pipe: %s.\n", strerror(errno));
+		goto END;
+	}
+
+	pid = fork();
+	switch (pid)
+	{
+		case -1:
+			printf("Error: failed to create child process: %s\n",
+					strerror(errno));
+			ret = errno;
+			break;
+		case PID_CHILD: /* Child process. */
+			/* Close read side of the pipe. It only needs to write
+			 * it stdout in it.
+			 */
+			ret = close_pipe_end(pfds[PFD_READ]);
+			if (ret < 0)
+			{
+				ret = errno;
+				break;
+			}
+
+			/* Redirect stdout to the pipe. */
+			close(STDOUT_FILENO);
+			dup2(pfds[PFD_WRITE], STDOUT_FILENO);
+
+			char * const arguments[] = {
+				"nm",
+				"--dynamic",
+				haystack,
+				0
+			};
+			ret = execve("/usr/bin/nm", arguments, 0);
+			if (ret < 0)
+			{
+				printf("Error(%d): failed to execute nm: %s\n",
+					getpid(), strerror(errno));
+			}
+			exit(0);
+			break;
+		default: /* Parent process. */
+			/* Close write side of the pipe. It only needs to read
+			 * the output of the child process from it.
+			 */
+			ret = close_pipe_end(pfds[PFD_WRITE]);
+			if (ret < 0)
+			{
+				ret = errno;
+				break;
+			}
+
+			/* Redirect the pipe to stdin. */
+			close(STDIN_FILENO);
+			dup2(pfds[PFD_READ], STDIN_FILENO);
+
+			int wstatus = 0;
+			ret = read_fd(STDIN_FILENO);
+			waitpid(pid, &wstatus, 0);
+
+			break;
+	}
+
 END:
-	return res;
+	return ret;
 }
