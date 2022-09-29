@@ -33,12 +33,12 @@ static void usage(void)
 static void version(void)
 {
 	printf(
-	"moses 1.0.0\n"
-	"\n"
-	"Copyright (C) 2022 Mathias Schmitt\n"
-	"License: GNU Affero General Public License <https://gnu.org/licenses/agpl.html>.\n"
-	"This is free software, and you are welcome to change and redistribute it.\n"
-	"This program comes with ABSOLUTELY NO WARRANTY.\n");
+		"moses 1.0.0\n"
+		"\n"
+		"Copyright (C) 2022 Mathias Schmitt\n"
+		"License: GNU Affero General Public License <https://gnu.org/licenses/agpl.html>.\n"
+		"This is free software, and you are welcome to change and redistribute it.\n"
+		"This program comes with ABSOLUTELY NO WARRANTY.\n");
 }
 
 static char check_arguments(int argc, char *argv[], char ** needle,
@@ -70,13 +70,10 @@ static char check_arguments(int argc, char *argv[], char ** needle,
 		}
 	}
 
-	printf("optind: %d - argc: %d\n", optind, argc);
 	if (optind + 2 <= argc)
 	{
 		*needle = strndup(argv[optind], strlen(argv[optind]));
-		printf("needle: %s\n", *needle);
 		*haystack = strndup(argv[optind + 1], strlen(argv[optind + 1]));
-		printf("haystack: %s\n", *haystack);
 	}
 	else
 	{
