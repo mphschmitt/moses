@@ -31,6 +31,12 @@
 #define BUF_SIZE 2048
 #define MIN_DISTANCE 70.0
 
+struct args
+{
+	char * needle;
+	char * haystack;
+};
+
 static void usage(void)
 {
 	printf(
@@ -51,11 +57,9 @@ static void version(void)
 		"This program comes with ABSOLUTELY NO WARRANTY.\n");
 }
 
-static char check_arguments(int argc, char *argv[], char ** needle,
-		char ** haystack)
+static char check_arguments(int argc, char *argv[], struct args * args)
 {
 	int opt;
-	char args = 0;
 	struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"version", no_argument, 0, 'v'},
@@ -82,8 +86,8 @@ static char check_arguments(int argc, char *argv[], char ** needle,
 
 	if (optind + 2 <= argc)
 	{
-		*needle = strndup(argv[optind], strlen(argv[optind]));
-		*haystack = strndup(argv[optind + 1], strlen(argv[optind + 1]));
+		args->needle = strndup(argv[optind], strlen(argv[optind]));
+		args->haystack = strndup(argv[optind + 1], strlen(argv[optind + 1]));
 	}
 	else
 	{
@@ -91,7 +95,7 @@ static char check_arguments(int argc, char *argv[], char ** needle,
 		return -EINVAL;
 	}
 
-	return args;
+	return 0;
 }
 
 static void extract_symbol(char * str)
@@ -153,16 +157,14 @@ static int read_fd(FILE * stream, char const * needle)
 
 int main(int argc, char *argv[])
 {
-	char * needle = NULL;
-	char * haystack = NULL;
-	char args = 0;
 	int ret = 0;
 	int pfds[2] = { 0 };
+	struct args args = {0};
 	pid_t pid;
 
-	args = check_arguments(argc, argv, &needle, &haystack);
-	if (args < 0) {
-		ret = (args == CHAR_MIN) ? 0 : -args;
+	ret = check_arguments(argc, argv, &args);
+	if (ret < 0) {
+		ret = (ret == CHAR_MIN) ? 0 : -ret;
 		goto END;
 	}
 
@@ -199,7 +201,7 @@ int main(int argc, char *argv[])
 			char * const arguments[] = {
 				"nm",
 				"--dynamic",
-				haystack,
+				args.haystack,
 				0
 			};
 			ret = execve("/usr/bin/nm", arguments, 0);
@@ -238,7 +240,7 @@ int main(int argc, char *argv[])
 			}
 
 			int wstatus = 0;
-			ret = read_fd(istream, needle);
+			ret = read_fd(istream, args.needle);
 			waitpid(pid, &wstatus, 0);
 
 			fclose(istream);
@@ -247,11 +249,11 @@ int main(int argc, char *argv[])
 	}
 
 END:
-	if(haystack)
-		free(haystack);
+	if(args.haystack)
+		free(args.haystack);
 
-	if(needle)
-		free(needle);
+	if(args.needle)
+		free(args.needle);
 
 	return ret;
 }
