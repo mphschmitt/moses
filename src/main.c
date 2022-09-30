@@ -213,5 +213,11 @@ int main(int argc, char *argv[])
 	}
 
 END:
+	if(haystack)
+		free(haystack);
+
+	if(needle)
+		free(needle);
+
 	return ret;
 }
