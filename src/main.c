@@ -92,6 +92,21 @@ static char check_arguments(int argc, char *argv[], char ** needle,
 	return args;
 }
 
+static void extract_symbol(char * str)
+{
+	size_t len = strlen(str);
+	size_t i = 0;
+
+	while(len > 0 && str[len] != ' ')
+		len--;
+
+	len++; /* Remove whitespace. */
+
+	while(str[len] && str[len] != '\n')
+		str[i++] = str[len++];
+	str[i] = '\0';
+}
+
 static int read_fd(FILE * stream)
 {
 	int ret = 0;
@@ -118,7 +133,8 @@ static int read_fd(FILE * stream)
 			break;
 		}
 
-		printf("%s", buffer);
+		extract_symbol(buffer);
+		printf("symbol: %s\n", buffer);
 	}
 
 	free(buffer);
