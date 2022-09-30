@@ -98,3 +98,12 @@ int lev_string_dist(char const * s1, char const * s2)
 
 	return ret_val;
 }
+
+double lev_dist_percent(int lev_dist, char const * s1, char const * s2)
+{
+	size_t max_len;
+
+	max_len = (strlen(s1) > strlen(s2)) ? strlen(s1) : strlen(s2);
+
+	return (1 - ((double)lev_dist / (double)max_len)) * 100;
+}

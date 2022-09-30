@@ -30,4 +30,13 @@
  */
 int lev_string_dist(char const * s1, char const * s2);
 
+/* @brief Give the Levenshtein's distance as a percentage.
+ *
+ * @param lev_dist The Levenshtein's distance.
+ * @param s1 The first string.
+ * @param s2 The second string.
+ * @return int A percentage representing the Levenshtein's distance.
+ */
+double lev_dist_percent(int lev_dist, char const * s1, char const * s2);
+
 #endif /* __LEVENSTEIN_H__ */
