@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 			if (ret < 0)
 			{
 				ret = errno;
-				break;
+				goto END;
 			}
 
 			/* Redirect the pipe to stdin. */
