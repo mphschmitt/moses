@@ -202,12 +202,15 @@ int main(int argc, char *argv[])
 					"process: %s\n", getpid(),
 					strerror(errno));
 				ret = errno;
+
 				goto END;
 			}
 
 			int wstatus = 0;
 			ret = read_fd(istream);
 			waitpid(pid, &wstatus, 0);
+
+			fclose(istream);
 
 			break;
 	}
