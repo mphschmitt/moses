@@ -96,26 +96,34 @@ static int read_fd(FILE * stream)
 {
 	int ret = 0;
 	ssize_t bytes = 0;
-	char buffer[BUF_SIZE] = { 0 };
-	int fd = fileno(stream);
+	size_t buffer_size = 0;
+	char * buffer = NULL;
 
 	while (1)
 	{
-		bytes = read(fd, buffer, sizeof(buffer));
-		if (bytes < 0)
+		bytes  = getline(&buffer, &buffer_size, stream);
+		if (bytes < 0 && errno)
 		{
+			free(buffer);
+			buffer = NULL;
+			buffer_size = 0;
+
 			printf("Error(%d): failed to read from fd %d: %s\n",
-				getpid(), fd, strerror(errno));
+				getpid(), fileno(stream), strerror(errno));
 			ret = errno;
 			break;
 		}
-		else if (bytes == 0)
+		else if (bytes < 0)
+		{
 			break;
+		}
 
 		printf("%s", buffer);
-
-		memset(buffer, 0, sizeof(buffer));
 	}
+
+	free(buffer);
+	buffer = NULL;
+	buffer_size = 0;
 
 	return ret;
 }
