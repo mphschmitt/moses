@@ -26,6 +26,7 @@
 #include <stdlib.h>
 
 #include "pipe.h"
+#include "levenshtein.h"
 
 #define BUF_SIZE 2048
 
@@ -107,7 +108,7 @@ static void extract_symbol(char * str)
 	str[i] = '\0';
 }
 
-static int read_fd(FILE * stream)
+static int read_fd(FILE * stream, char const * needle)
 {
 	int ret = 0;
 	ssize_t bytes = 0;
@@ -134,7 +135,11 @@ static int read_fd(FILE * stream)
 		}
 
 		extract_symbol(buffer);
-		printf("symbol: %s\n", buffer);
+		double lev_distance = lev_dist_percent(
+				lev_string_dist(needle, buffer),
+				needle,
+				buffer);
+		printf("symbol: %s matches %.1f%%\n", buffer, lev_distance);
 	}
 
 	free(buffer);
@@ -231,7 +236,7 @@ int main(int argc, char *argv[])
 			}
 
 			int wstatus = 0;
-			ret = read_fd(istream);
+			ret = read_fd(istream, needle);
 			waitpid(pid, &wstatus, 0);
 
 			fclose(istream);
