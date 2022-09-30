@@ -35,6 +35,7 @@ struct args
 {
 	char * needle;
 	char * haystack;
+	double min_distance;
 };
 
 static void usage(void)
@@ -42,8 +43,10 @@ static void usage(void)
 	printf(
 		"Usage: moses [options] [needle] [haystack]\n"
 		"Search for the symbol needle into haystack (a file or a folder).\n"
-		"  -h  --help       display this help message and exit\n"
-		"  -v  --version    output version information and exit\n");
+		"  -h  --help         display this help message and exit.\n"
+		"  -v  --version      output version information and exit.\n"
+		"  -d  --min_distance the minimum distance to needle for a "
+			"string to be a match.\n");
 }
 
 static void version(void)
@@ -63,10 +66,11 @@ static char check_arguments(int argc, char *argv[], struct args * args)
 	struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"version", no_argument, 0, 'v'},
+		{"min_distance", required_argument, 0, 'd'},
 		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "hv", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "hvd:", long_options, NULL)) != -1) {
 		switch (opt) {
 		case 'v':
 			if (optind < argc) {
@@ -75,6 +79,16 @@ static char check_arguments(int argc, char *argv[], struct args * args)
 			}
 			version();
 			return CHAR_MIN;
+		case 'd':
+			args->min_distance = atof(optarg);
+			if (args->min_distance == 0)
+			{
+				printf("Invalid argument to 'd' option.\n");
+				usage();
+				return -EINVAL;
+			}
+			printf("Minimum distance for a match: %s\n", optarg);
+			break;
 		case 'h':
 		case '?':
 			usage();
@@ -113,7 +127,7 @@ static void extract_symbol(char * str)
 	str[i] = '\0';
 }
 
-static int read_fd(FILE * stream, char const * needle)
+static int read_fd(FILE * stream, struct args * args)
 {
 	int ret = 0;
 	ssize_t bytes = 0;
@@ -141,10 +155,10 @@ static int read_fd(FILE * stream, char const * needle)
 
 		extract_symbol(buffer);
 		double lev_distance = lev_dist_percent(
-				lev_string_dist(needle, buffer),
-				needle,
+				lev_string_dist(args->needle, buffer),
+				args->needle,
 				buffer);
-		if (lev_distance >= MIN_DISTANCE)
+		if (lev_distance >= args->min_distance)
 			printf("symbol: %s matches %.1f%%\n", buffer, lev_distance);
 	}
 
@@ -159,7 +173,11 @@ int main(int argc, char *argv[])
 {
 	int ret = 0;
 	int pfds[2] = { 0 };
-	struct args args = {0};
+	struct args args = {
+		NULL,
+		NULL,
+		MIN_DISTANCE
+	};
 	pid_t pid;
 
 	ret = check_arguments(argc, argv, &args);
@@ -240,7 +258,7 @@ int main(int argc, char *argv[])
 			}
 
 			int wstatus = 0;
-			ret = read_fd(istream, args.needle);
+			ret = read_fd(istream, &args);
 			waitpid(pid, &wstatus, 0);
 
 			fclose(istream);
