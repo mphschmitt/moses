@@ -92,11 +92,12 @@ static char check_arguments(int argc, char *argv[], char ** needle,
 	return args;
 }
 
-static int read_fd(int fd)
+static int read_fd(FILE * stream)
 {
 	int ret = 0;
 	ssize_t bytes = 0;
 	char buffer[BUF_SIZE] = { 0 };
+	int fd = fileno(stream);
 
 	while (1)
 	{
@@ -193,8 +194,19 @@ int main(int argc, char *argv[])
 			close(STDIN_FILENO);
 			dup2(pfds[PFD_READ], STDIN_FILENO);
 
+			FILE * istream;
+			istream = fdopen(pfds[PFD_READ], "r");
+			if (istream == NULL)
+			{
+				printf("Error(%d): failed to read from child "
+					"process: %s\n", getpid(),
+					strerror(errno));
+				ret = errno;
+				goto END;
+			}
+
 			int wstatus = 0;
-			ret = read_fd(STDIN_FILENO);
+			ret = read_fd(istream);
 			waitpid(pid, &wstatus, 0);
 
 			break;
