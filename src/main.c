@@ -29,6 +29,7 @@
 #include "levenshtein.h"
 
 #define BUF_SIZE 2048
+#define MIN_DISTANCE 70.0
 
 static void usage(void)
 {
@@ -139,7 +140,8 @@ static int read_fd(FILE * stream, char const * needle)
 				lev_string_dist(needle, buffer),
 				needle,
 				buffer);
-		printf("symbol: %s matches %.1f%%\n", buffer, lev_distance);
+		if (lev_distance >= MIN_DISTANCE)
+			printf("symbol: %s matches %.1f%%\n", buffer, lev_distance);
 	}
 
 	free(buffer);
