@@ -31,7 +31,8 @@ FLAGS := ${ERROR_FLAGS} ${FORMAT_FLAGS} ${OPTIMIZATION_FLAGS}
 OUTPUT_DIR := out
 
 PROG_NAME := moses
-SRC := main.c
+SRC := main.c \
+       pipe.c
 SOURCES := $(addprefix src/, ${SRC})
 
 INCLUDES := includes

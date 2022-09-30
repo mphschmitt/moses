@@ -25,15 +25,9 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 
-#define PID_CHILD 0
+#include "pipe.h"
+
 #define BUF_SIZE 2048
-
-enum PFD
-{
-	PFD_READ = 0,
-	PFD_WRITE = 1
-};
-
 
 static void usage(void)
 {
@@ -96,19 +90,6 @@ static char check_arguments(int argc, char *argv[], char ** needle,
 	}
 
 	return args;
-}
-
-static int close_pipe_end(int fd)
-{
-	int ret = close(fd);
-	if (ret < 0)
-	{
-		printf("Error(%d): failed to close pipe entrance (fd %d): %s\n",
-			getpid(), fd, strerror(errno));
-		ret = errno;
-	}
-
-	return ret;
 }
 
 static int read_fd(int fd)
