@@ -28,7 +28,6 @@
 #include "pipe.h"
 #include "levenshtein.h"
 
-#define BUF_SIZE 2048
 #define MIN_DISTANCE 70.0
 
 struct args
