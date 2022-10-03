@@ -143,12 +143,13 @@ static void extract_symbol(char * str)
 static int read_fd(FILE * stream, struct args * args)
 {
 	int ret = 0;
-	ssize_t bytes = 0;
 	size_t buffer_size = 0;
 	char * buffer = NULL;
 
 	while (1)
 	{
+		ssize_t bytes = 0;
+
 		bytes  = getline(&buffer, &buffer_size, stream);
 		if (bytes < 0 && errno)
 		{
