@@ -29,11 +29,12 @@
 #include "levenshtein.h"
 
 #define MIN_DISTANCE 70.0
+#define MAX_HAYSTACKS 100
 
 struct args
 {
 	char * needle;
-	char * haystack;
+	char * haystacks[MAX_HAYSTACKS];
 	double min_distance;
 };
 
@@ -62,6 +63,7 @@ static void version(void)
 static char check_arguments(int argc, char *argv[], struct args * args)
 {
 	int opt;
+	int haystack_nb = 0;
 	struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"version", no_argument, 0, 'v'},
@@ -97,12 +99,23 @@ static char check_arguments(int argc, char *argv[], struct args * args)
 		}
 	}
 
-	if (optind + 2 <= argc)
+	while (optind < argc)
 	{
-		args->needle = strndup(argv[optind], strlen(argv[optind]));
-		args->haystack = strndup(argv[optind + 1], strlen(argv[optind + 1]));
+		if (!args->needle)
+		{
+			args->needle = strndup(argv[optind],
+					strlen(argv[optind]));
+		}
+		else
+		{
+			args->haystacks[haystack_nb++] = strndup(argv[optind],
+					strlen(argv[optind]));
+		}
+
+		optind++;
 	}
-	else
+
+	if (!args->needle || !args->haystacks[0])
 	{
 		usage();
 		return -EINVAL;
@@ -155,10 +168,9 @@ static int read_fd(FILE * stream, struct args * args)
 		extract_symbol(buffer);
 		double lev_distance = lev_dist_percent(
 				lev_string_dist(args->needle, buffer),
-				args->needle,
-				buffer);
+				args->needle, buffer);
 		if (lev_distance >= args->min_distance)
-			printf("symbol: %s matches %.1f%%\n", buffer, lev_distance);
+			printf("\tsymbol: %s matches %.1f%%\n", buffer, lev_distance);
 	}
 
 	free(buffer);
@@ -174,7 +186,7 @@ int main(int argc, char *argv[])
 	int pfds[2] = { 0 };
 	struct args args = {
 		NULL,
-		NULL,
+		{ 0 },
 		MIN_DISTANCE
 	};
 	pid_t pid;
@@ -185,89 +197,101 @@ int main(int argc, char *argv[])
 		goto END;
 	}
 
-	ret = pipe(pfds);
-	if (ret < 0)
+	for(int i = 0; i < MAX_HAYSTACKS; i++)
 	{
-		printf("Error: failed to create pipe: %s.\n", strerror(errno));
-		goto END;
-	}
-
-	pid = fork();
-	switch (pid)
-	{
-		case -1:
-			printf("Error: failed to create child process: %s\n",
-					strerror(errno));
-			ret = errno;
+		if (!args.haystacks[i])
 			break;
-		case PID_CHILD: /* Child process. */
-			/* Close read side of the pipe. It only needs to write
-			 * it stdout in it.
-			 */
-			ret = close_pipe_end(pfds[PFD_READ]);
-			if (ret < 0)
-			{
+		printf("Searching in haystack: %s\n", args.haystacks[i]);
+
+		ret = pipe(pfds);
+		if (ret < 0)
+		{
+			printf("Error: failed to create pipe: %s.\n", strerror(errno));
+			goto END;
+		}
+
+		pid = fork();
+		switch (pid)
+		{
+			case -1:
+				printf("Error: failed to create child process: %s\n",
+						strerror(errno));
 				ret = errno;
 				break;
-			}
+			case PID_CHILD: /* Child process. */
+				/* Close read side of the pipe. It only needs to write
+				 * it stdout in it.
+				 */
+				ret = close_pipe_end(pfds[PFD_READ]);
+				if (ret < 0)
+				{
+					ret = errno;
+					break;
+				}
 
-			/* Redirect stdout to the pipe. */
-			close(STDOUT_FILENO);
-			dup2(pfds[PFD_WRITE], STDOUT_FILENO);
+				/* Redirect stdout to the pipe. */
+				close(STDOUT_FILENO);
+				dup2(pfds[PFD_WRITE], STDOUT_FILENO);
 
-			char * const arguments[] = {
-				"nm",
-				"--dynamic",
-				args.haystack,
-				0
-			};
-			ret = execve("/usr/bin/nm", arguments, 0);
-			if (ret < 0)
-			{
-				printf("Error(%d): failed to execute nm: %s\n",
-					getpid(), strerror(errno));
-			}
-			exit(0);
-			break;
-		default: /* Parent process. */
-			/* Close write side of the pipe. It only needs to read
-			 * the output of the child process from it.
-			 */
-			ret = close_pipe_end(pfds[PFD_WRITE]);
-			if (ret < 0)
-			{
-				ret = errno;
-				goto END;
-			}
+				char * const arguments[] = {
+					"nm",
+					"--dynamic",
+					args.haystacks[i],
+					0
+				};
+				ret = execve("/usr/bin/nm", arguments, 0);
+				if (ret < 0)
+				{
+					printf("Error(%d): failed to execute nm: %s\n",
+						getpid(), strerror(errno));
+				}
+				exit(0);
+				break;
+			default: /* Parent process. */
+				/* Close write side of the pipe. It only needs to read
+				 * the output of the child process from it.
+				 */
+				ret = close_pipe_end(pfds[PFD_WRITE]);
+				if (ret < 0)
+				{
+					ret = errno;
+					goto END;
+				}
 
-			/* Redirect the pipe to stdin. */
-			close(STDIN_FILENO);
-			dup2(pfds[PFD_READ], STDIN_FILENO);
+				/* Redirect the pipe to stdin. */
+				close(STDIN_FILENO);
+				dup2(pfds[PFD_READ], STDIN_FILENO);
 
-			FILE * istream;
-			istream = fdopen(pfds[PFD_READ], "r");
-			if (istream == NULL)
-			{
-				printf("Error(%d): failed to read from child "
-					"process: %s\n", getpid(),
-					strerror(errno));
-				ret = errno;
+				FILE * istream;
+				istream = fdopen(pfds[PFD_READ], "r");
+				if (istream == NULL)
+				{
+					printf("Error(%d): failed to read from child "
+						"process: %s\n", getpid(),
+						strerror(errno));
+					ret = errno;
 
-				goto END;
-			}
+					goto END;
+				}
 
-			int wstatus = 0;
-			ret = read_fd(istream, &args);
-			waitpid(pid, &wstatus, 0);
+				int wstatus = 0;
+				ret = read_fd(istream, &args);
+				waitpid(pid, &wstatus, 0);
 
-			fclose(istream);
+				fclose(istream);
 
-			break;
+				break;
+		}
 	}
 
 END:
-	if(args.haystack)
-		free(args.haystack);
+	for(int i = 0; i < MAX_HAYSTACKS; i++)
+	{
+		if(!args.haystacks[i])
+			break;
+
+		free(args.haystacks[i]);
+	}
 
 	if(args.needle)
 		free(args.needle);
