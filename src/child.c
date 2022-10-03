@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-int run_child(char * haystack, int pfds[2])
+int run_child(char * haystack, int pfds[PFD_NUMBER])
 {
 	int ret = 0;
 

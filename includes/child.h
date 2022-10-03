@@ -18,7 +18,9 @@
 #ifndef __CHILD_H__
 #define __CHILD_H__
 
-int run_child(char * haystack, int pfds[2]);
+#include "pipe.h"
+
+int run_child(char * haystack, int pfds[PFD_NUMBER]);
 
 #endif /* __CHILD_H__ */
 

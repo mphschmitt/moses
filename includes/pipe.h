@@ -23,7 +23,8 @@
 enum PFD
 {
 	PFD_READ = 0,
-	PFD_WRITE = 1
+	PFD_WRITE = 1,
+	PFD_NUMBER
 };
 
 /* @brief Close the end of the pipe.
