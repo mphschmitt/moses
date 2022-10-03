@@ -27,6 +27,7 @@
 
 #include "pipe.h"
 #include "levenshtein.h"
+#include "child.h"
 
 #define MIN_DISTANCE 70.0
 #define MAX_HAYSTACKS 100
@@ -206,7 +207,8 @@ int main(int argc, char *argv[])
 		ret = pipe(pfds);
 		if (ret < 0)
 		{
-			printf("Error: failed to create pipe: %s.\n", strerror(errno));
+			printf("Error: failed to create pipe: %s.\n",
+					strerror(errno));
 			goto END;
 		}
 
@@ -219,33 +221,7 @@ int main(int argc, char *argv[])
 				ret = errno;
 				break;
 			case PID_CHILD: /* Child process. */
-				/* Close read side of the pipe. It only needs to write
-				 * it stdout in it.
-				 */
-				ret = close_pipe_end(pfds[PFD_READ]);
-				if (ret < 0)
-				{
-					ret = errno;
-					break;
-				}
-
-				/* Redirect stdout to the pipe. */
-				close(STDOUT_FILENO);
-				dup2(pfds[PFD_WRITE], STDOUT_FILENO);
-
-				char * const arguments[] = {
-					"nm",
-					"--dynamic",
-					args.haystacks[i],
-					0
-				};
-				ret = execve("/usr/bin/nm", arguments, 0);
-				if (ret < 0)
-				{
-					printf("Error(%d): failed to execute nm: %s\n",
-						getpid(), strerror(errno));
-				}
-				exit(0);
+				run_child(args.haystacks[i], pfds);
 				break;
 			default: /* Parent process. */
 				/* Close write side of the pipe. It only needs to read

@@ -33,6 +33,7 @@ OUTPUT_DIR := out
 PROG_NAME := moses
 SRC := main.c \
        pipe.c \
+       child.c \
        levenshtein.c
 
 SOURCES := $(addprefix src/, ${SRC})
