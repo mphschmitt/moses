@@ -20,7 +20,7 @@
 
 #include "pipe.h"
 
-int run_child(char * haystack, int pfds[PFD_NUMBER]);
+void run_child(char * haystack, int pfds[PFD_NUMBER]);
 
 #endif /* __CHILD_H__ */
 
