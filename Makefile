@@ -34,6 +34,7 @@ PROG_NAME := moses
 SRC := main.c \
        pipe.c \
        child.c \
+       parent.c \
        levenshtein.c
 
 SOURCES := $(addprefix src/, ${SRC})
