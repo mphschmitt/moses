@@ -117,7 +117,7 @@ static char check_arguments(int argc, char *argv[], struct args * args)
 int main(int argc, char *argv[])
 {
 	int ret = 0;
-	int pfds[2] = { 0 };
+	int pfds[PFD_NUMBER] = { 0 };
 	struct args args = {
 		NULL,
 		{ 0 },
