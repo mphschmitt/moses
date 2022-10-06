@@ -114,6 +114,40 @@ static char check_arguments(int argc, char *argv[], struct args * args)
 	return 0;
 }
 
+static int search(struct args * args, int index, int pfds[PFD_NUMBER])
+{
+	pid_t pid;
+	int ret = 0;
+
+	printf("Searching in haystack: %s\n", args->haystacks[index]);
+
+	ret = pipe(pfds);
+	if (ret < 0)
+	{
+		printf("Error: failed to create pipe: %s.\n",
+				strerror(errno));
+		return ret;
+	}
+
+	pid = fork();
+	switch (pid)
+	{
+		case -1:
+			printf("Error: failed to create child process: %s\n",
+					strerror(errno));
+			ret = errno;
+			break;
+		case PID_CHILD: /* Child process. */
+			run_child(args->haystacks[index], pfds);
+			break;
+		default: /* Parent process. */
+			ret = run_parent(args, pfds, pid);
+			break;
+	}
+
+	return ret;
+}
+
 int main(int argc, char *argv[])
 {
 	int ret = 0;
@@ -123,7 +157,6 @@ int main(int argc, char *argv[])
 		{ 0 },
 		MIN_DISTANCE
 	};
-	pid_t pid;
 
 	ret = check_arguments(argc, argv, &args);
 	if (ret < 0) {
@@ -135,33 +168,13 @@ int main(int argc, char *argv[])
 	{
 		if (!args.haystacks[i])
 			break;
-		printf("Searching in haystack: %s\n", args.haystacks[i]);
 
-		ret = pipe(pfds);
+		{
+		}
+
+		ret = search(&args, i, pfds);
 		if (ret < 0)
-		{
-			printf("Error: failed to create pipe: %s.\n",
-					strerror(errno));
-			goto END;
-		}
-
-		pid = fork();
-		switch (pid)
-		{
-			case -1:
-				printf("Error: failed to create child process: %s\n",
-						strerror(errno));
-				ret = errno;
-				break;
-			case PID_CHILD: /* Child process. */
-				run_child(args.haystacks[i], pfds);
-				break;
-			default: /* Parent process. */
-				ret = run_parent(&args, pfds, pid);
-				if (ret < 0)
-					goto END;
-				break;
-		}
+			break;
 	}
 
 END:
