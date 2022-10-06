@@ -22,6 +22,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include "common.h"
 #include "pipe.h"
@@ -114,12 +117,27 @@ static char check_arguments(int argc, char *argv[], struct args * args)
 	return 0;
 }
 
-static int search(struct args * args, int index, int pfds[PFD_NUMBER])
+/* Strip the filename from a full file path. */
+static void get_path(char * file_path)
+{
+	size_t i = strlen(file_path);
+
+	if (i <= 1 || !strncmp(file_path, "/", i))
+		return;
+
+	i -= 2;
+	while (i > 0 && file_path[i] != '/')
+		i--;
+	if (file_path[i + 1] == '/')
+		file_path[i + 1] = '\0';
+}
+
+static int search(struct args * args, char * file, int pfds[PFD_NUMBER])
 {
 	pid_t pid;
 	int ret = 0;
 
-	printf("Searching in haystack: %s\n", args->haystacks[index]);
+	printf("Searching in haystack: %s\n", file);
 
 	ret = pipe(pfds);
 	if (ret < 0)
@@ -138,10 +156,118 @@ static int search(struct args * args, int index, int pfds[PFD_NUMBER])
 			ret = errno;
 			break;
 		case PID_CHILD: /* Child process. */
-			run_child(args->haystacks[index], pfds);
+			run_child(file, pfds);
 			break;
 		default: /* Parent process. */
 			ret = run_parent(args, pfds, pid);
+			break;
+	}
+
+	return ret;
+}
+
+static int analyze_file(struct args * args, char * file, int pfds[PFD_NUMBER])
+{
+	int ret = 0;
+	struct stat statbuff;
+
+	if (!strcmp(file, ".") || !strcmp(file, ".."))
+		return 0;
+
+	printf("file: %s\n", file);
+
+	ret = stat(file, &statbuff);
+	if (ret < 0)
+	{
+		printf("Failed to stat file '%s': %s. Skipping...\n", file,
+			strerror(errno));
+		return ret;
+	}
+
+	switch (statbuff.st_mode & S_IFMT) {
+		case S_IFDIR: /* File is a directory. */
+		{
+			DIR * dir = NULL;
+			char * path = NULL;
+
+			dir = opendir(file);
+			if (!dir)
+				return -errno;
+
+			printf("Opened file %s\n", file);
+
+			path = strndup(file, strlen(file));
+			if (!path)
+			{
+				printf("Failed to allocate memory: %s\n",
+					strerror(errno));
+				return -errno;
+			}
+			printf("path before: %s\n", path);
+			get_path(path);
+			printf("path after: %s\n", path);
+
+			while (1)
+			{
+				char * fullpath = NULL;
+				struct dirent * dirent = readdir(dir);
+
+				if (!dirent && errno)
+				{
+					free(path);
+					free(dir);
+					return -errno;
+				}
+				else if (!dirent)
+					break;
+
+				/* Skip hidden files, '.' and '..' */
+				if (dirent->d_name[0] == '.')
+					continue;
+
+				fullpath = calloc(strlen(path) + strlen(dirent->d_name) + 2, sizeof(char));
+				if (!fullpath)
+				{
+					printf("Failed to allocate memory: %s\n",
+						strerror(errno));
+					free(path);
+					free(dir);
+					return -errno;
+				}
+
+				printf("dirent: %s, %ld\n", dirent->d_name, sizeof(dirent->d_name));
+				printf("path: %s, %ld\n", path, strlen(path));
+				printf("fullpath: %ld\n", sizeof(path));
+
+				strncat(fullpath, path, strlen(path));
+				if (path[strlen(fullpath) - 1] != '/')
+					fullpath[strlen(fullpath)] = '/';
+				strncat(fullpath, dirent->d_name, strlen(dirent->d_name));
+
+				analyze_file(args, fullpath, pfds);
+
+				free(fullpath);
+			}
+
+			free(path);
+			free(dir);
+
+			break;
+		}
+		case S_IFREG: /* File is a regular file. */
+		{
+			ret = search(args, file, pfds);
+			if (ret < 0)
+			{
+				printf("The search for symbol '%s' failed. "
+					"Skipping...\n", file);
+				return ret;
+			}
+			break;
+		}
+		default:
+			printf("File '%s' is neither a shared object nor a "
+				"directory. Skipping...\n", file);
 			break;
 	}
 
@@ -169,11 +295,8 @@ int main(int argc, char *argv[])
 		if (!args.haystacks[i])
 			break;
 
-		{
-		}
-
-		ret = search(&args, i, pfds);
-		if (ret < 0)
+		ret = analyze_file(&args, args.haystacks[i], pfds);
+		if (ret == -ENOMEM)
 			break;
 	}
 
