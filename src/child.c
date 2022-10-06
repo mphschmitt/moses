@@ -36,5 +36,5 @@ void run_child(char * haystack, int pfds[PFD_NUMBER])
 			getpid(), strerror(errno));
 	}
 
-	exit(0);
+	exit(errno);
 }
