@@ -24,7 +24,6 @@
  *
  * @param haystack The file to analyze.
  * @param pfds The file descriptors of the pipe.
- * @return 0 if the fd has successfully been closed, less than 0 otherwise.
  */
 void run_child(char * haystack, int pfds[PFD_NUMBER]);
 
