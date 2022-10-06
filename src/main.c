@@ -132,8 +132,9 @@ static void get_path(char * file_path)
 		file_path[i + 1] = '\0';
 }
 
-static int search(struct args * args, char * file, int pfds[PFD_NUMBER])
+static int search(struct args * args, char * file)
 {
+	int pfds[PFD_NUMBER] = { 0 };
 	pid_t pid;
 	int ret = 0;
 
@@ -166,7 +167,7 @@ static int search(struct args * args, char * file, int pfds[PFD_NUMBER])
 	return ret;
 }
 
-static int analyze_file(struct args * args, char * file, int pfds[PFD_NUMBER])
+static int analyze_file(struct args * args, char * file)
 {
 	int ret = 0;
 	struct stat statbuff;
@@ -244,7 +245,7 @@ static int analyze_file(struct args * args, char * file, int pfds[PFD_NUMBER])
 					fullpath[strlen(fullpath)] = '/';
 				strncat(fullpath, dirent->d_name, strlen(dirent->d_name));
 
-				analyze_file(args, fullpath, pfds);
+				analyze_file(args, fullpath);
 
 				free(fullpath);
 			}
@@ -256,7 +257,7 @@ static int analyze_file(struct args * args, char * file, int pfds[PFD_NUMBER])
 		}
 		case S_IFREG: /* File is a regular file. */
 		{
-			ret = search(args, file, pfds);
+			ret = search(args, file);
 			if (ret < 0)
 			{
 				printf("The search for symbol '%s' failed. "
@@ -277,7 +278,6 @@ static int analyze_file(struct args * args, char * file, int pfds[PFD_NUMBER])
 int main(int argc, char *argv[])
 {
 	int ret = 0;
-	int pfds[PFD_NUMBER] = { 0 };
 	struct args args = {
 		NULL,
 		{ 0 },
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
 		if (!args.haystacks[i])
 			break;
 
-		ret = analyze_file(&args, args.haystacks[i], pfds);
+		ret = analyze_file(&args, args.haystacks[i]);
 		if (ret == -ENOMEM)
 			break;
 	}
