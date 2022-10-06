@@ -25,19 +25,10 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 
+#include "common.h"
 #include "pipe.h"
 #include "levenshtein.h"
 #include "child.h"
-
-#define MIN_DISTANCE 70.0
-#define MAX_HAYSTACKS 100
-
-struct args
-{
-	char * needle;
-	char * haystacks[MAX_HAYSTACKS];
-	double min_distance;
-};
 
 static void usage(void)
 {
