@@ -216,7 +216,7 @@ static int analyze_file(struct args * args, char * file)
 				if (!dirent && errno)
 				{
 					free(path);
-					free(dir);
+					closedir(dir);
 					return -errno;
 				}
 				else if (!dirent)
@@ -232,7 +232,7 @@ static int analyze_file(struct args * args, char * file)
 					printf("Failed to allocate memory: %s\n",
 						strerror(errno));
 					free(path);
-					free(dir);
+					closedir(dir);
 					return -errno;
 				}
 
@@ -251,7 +251,7 @@ static int analyze_file(struct args * args, char * file)
 			}
 
 			free(path);
-			free(dir);
+			closedir(dir);
 
 			break;
 		}
