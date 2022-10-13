@@ -167,6 +167,55 @@ static int search(struct args * args, char * file)
 	return ret;
 }
 
+/* @brief Check if a file is a shared elf object.
+ *
+ * Check the first four bytes of the file (magic numbers) to check its type.
+ *
+ * @param file_path The path of the file to open.
+ * @return 1 if the file is a shared elf object, 0 otherwise.
+ */
+static int file_is_shared_elf(char * file_path)
+{
+	int res = 0;
+	char magic_numbers[4] = { 0 };
+
+	FILE * file = fopen(file_path, "r");
+	if (!file)
+	{
+		printf("Error: failed to open file %s: %s\n", file_path,
+			strerror(errno));
+		return 0;
+	}
+
+	size_t bytes_read = fread(magic_numbers, sizeof(char), 4, file);
+	if (bytes_read == 0)
+	{
+		int read_error = ferror(file);
+		if (read_error)
+		{
+			printf("Error: failed to read from file: %s\n",
+				file_path);
+			return 0;
+		}
+	}
+
+	res = fclose(file);
+	if (res)
+	{
+		printf("Error: failed to close file %s: %s\n", file_path,
+			strerror(errno));
+		res = 0;
+	}
+
+	if (magic_numbers[0] == 0x7f &&
+		magic_numbers[1] == 0x45 &&
+		magic_numbers[2] == 0x4c &&
+		magic_numbers[3] == 0x46)
+		res = 1;
+
+	return res;
+}
+
 static int analyze_file(struct args * args, char * file)
 {
 	int ret = 0;
@@ -257,6 +306,9 @@ static int analyze_file(struct args * args, char * file)
 		}
 		case S_IFREG: /* File is a regular file. */
 		{
+			if (!file_is_shared_elf(file))
+				break;
+
 			ret = search(args, file);
 			if (ret < 0)
 			{

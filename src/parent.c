@@ -72,6 +72,8 @@ static int read_fd(FILE * stream, struct args * args)
 int run_parent(struct args * args, int pfds[PFD_NUMBER], pid_t pid)
 {
 	int ret = 0;
+	FILE * istream = NULL;
+
 	/* Close write side of the pipe. It only needs to read
 	 * the output of the child process from it.
 	 */
@@ -86,7 +88,6 @@ int run_parent(struct args * args, int pfds[PFD_NUMBER], pid_t pid)
 	close(STDIN_FILENO);
 	dup2(pfds[PFD_READ], STDIN_FILENO);
 
-	FILE * istream;
 	istream = fdopen(pfds[PFD_READ], "r");
 	if (istream == NULL)
 	{
