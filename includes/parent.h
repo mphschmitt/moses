@@ -27,10 +27,15 @@ struct args;
  * @param args The arguments of the program.
  * @param pfds The file descriptors of the pipe.
  * @param pid The pid of the parent process.
+ * @param file The name of the file the symbol is searched in.
  *
  * @return 0 if the parent successfully read from pipe to the child process.
  */
-int run_parent(struct args * args, int pfds[PFD_NUMBER], pid_t pid);
+int run_parent(
+		struct args * args,
+		int pfds[PFD_NUMBER],
+		pid_t pid,
+		char const * file);
 
 #endif /* __PARENT_H__ */
 

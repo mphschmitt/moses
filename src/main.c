@@ -160,7 +160,7 @@ static int search(struct args * args, char * file)
 			run_child(file, pfds);
 			break;
 		default: /* Parent process. */
-			ret = run_parent(args, pfds, pid);
+			ret = run_parent(args, pfds, pid, file);
 			break;
 	}
 

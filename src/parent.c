@@ -26,7 +26,7 @@ static void extract_symbol(char * str)
 }
 
 
-static int read_fd(FILE * stream, struct args * args)
+static int read_fd(FILE * stream, struct args * args, char const * file)
 {
 	int ret = 0;
 	size_t buffer_size = 0;
@@ -58,7 +58,7 @@ static int read_fd(FILE * stream, struct args * args)
 				lev_string_dist(args->needle, buffer),
 				args->needle, buffer);
 		if (lev_distance >= args->min_distance)
-			printf("\tsymbol: %s matches %.1f%%\n", buffer, lev_distance);
+			printf("%s\t%s matches %.1f%%\n", file, buffer, lev_distance);
 	}
 
 	free(buffer);
@@ -69,7 +69,7 @@ static int read_fd(FILE * stream, struct args * args)
 }
 
 
-int run_parent(struct args * args, int pfds[PFD_NUMBER], pid_t pid)
+int run_parent(struct args * args, int pfds[PFD_NUMBER], pid_t pid, char const * file)
 {
 	int ret = 0;
 	FILE * istream = NULL;
@@ -100,7 +100,7 @@ int run_parent(struct args * args, int pfds[PFD_NUMBER], pid_t pid)
 	}
 
 	int wstatus = 0;
-	ret = read_fd(istream, args);
+	ret = read_fd(istream, args, file);
 	waitpid(pid, &wstatus, 0);
 
 END:
