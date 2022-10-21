@@ -260,6 +260,9 @@ static int analyze_file(struct args * args, char * file)
 			{
 				char * fullpath = NULL;
 				struct dirent * dirent = readdir(dir);
+				size_t size;
+
+				size = strlen(file) + strlen(dirent->d_name) + 2;
 
 				if (!dirent && errno)
 				{
@@ -274,7 +277,7 @@ static int analyze_file(struct args * args, char * file)
 				if (dirent->d_name[0] == '.')
 					continue;
 
-				fullpath = calloc(strlen(path) + strlen(dirent->d_name) + 2, sizeof(char));
+				fullpath = calloc(size, sizeof(char));
 				if (!fullpath)
 				{
 					printf("Failed to allocate memory: %s\n",
@@ -284,10 +287,10 @@ static int analyze_file(struct args * args, char * file)
 					return -errno;
 				}
 
-				strncat(fullpath, path, strlen(path));
+				strncpy(fullpath, path, size);
 				if (path[strlen(fullpath) - 1] != '/')
 					fullpath[strlen(fullpath)] = '/';
-				strncat(fullpath, dirent->d_name, strlen(dirent->d_name));
+				strncat(fullpath, dirent->d_name, strlen(fullpath));
 
 				analyze_file(args, fullpath);
 
