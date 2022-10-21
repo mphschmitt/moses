@@ -24,8 +24,9 @@
  *
  * @param haystack The file to analyze.
  * @param pfds The file descriptors of the pipe.
+ * @param verbose The verbosity of the program.
  */
-void run_child(char * haystack, int pfds[PFD_NUMBER]);
+void run_child(char * haystack, int pfds[PFD_NUMBER], int verbose);
 
 #endif /* __CHILD_H__ */
 

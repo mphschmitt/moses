@@ -58,7 +58,9 @@ static int read_fd(FILE * stream, struct args * args, char const * file)
 				lev_string_dist(args->needle, buffer),
 				args->needle, buffer);
 		if (lev_distance >= args->min_distance)
-			printf("%s\t%s matches %.1f%%\n", file, buffer, lev_distance);
+			printf("%s\t%s%s%.1f%%\n", file, buffer,
+					args->verbose ? " matches " : "\t",
+					lev_distance);
 	}
 
 	free(buffer);

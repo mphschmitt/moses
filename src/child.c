@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-void run_child(char * haystack, int pfds[PFD_NUMBER])
+void run_child(char * haystack, int pfds[PFD_NUMBER], int verbose)
 {
 	int ret = 0;
 
@@ -18,6 +18,10 @@ void run_child(char * haystack, int pfds[PFD_NUMBER])
 	ret = close_pipe_end(pfds[PFD_READ]);
 	if (ret < 0)
 		exit(ret);
+
+	/* Close stderr. */
+	if (!verbose)
+		close(STDERR_FILENO);
 
 	/* Redirect stdout to the pipe. */
 	close(STDOUT_FILENO);

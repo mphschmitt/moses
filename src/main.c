@@ -38,6 +38,7 @@ static void usage(void)
 		"Search for the symbol needle into haystack (a file or a folder).\n"
 		"  -h  --help         display this help message and exit.\n"
 		"  -v  --version      output version information and exit.\n"
+		"  -l  --verbose      display additional informations.\n"
 		"  -d  --min_distance the minimum distance to needle for a "
 			"string to be a match.\n");
 }
@@ -60,11 +61,12 @@ static char check_arguments(int argc, char *argv[], struct args * args)
 	struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"version", no_argument, 0, 'v'},
+		{"verbose", no_argument, 0, 'l'},
 		{"min_distance", required_argument, 0, 'd'},
 		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "hvd:", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "hvld:", long_options, NULL)) != -1) {
 		switch (opt) {
 		case 'v':
 			if (optind < argc) {
@@ -73,6 +75,9 @@ static char check_arguments(int argc, char *argv[], struct args * args)
 			}
 			version();
 			return CHAR_MIN;
+		case 'l':
+			args->verbose = 1;
+			break;
 		case 'd':
 			args->min_distance = atof(optarg);
 			if (args->min_distance == 0)
@@ -81,7 +86,6 @@ static char check_arguments(int argc, char *argv[], struct args * args)
 				usage();
 				return -EINVAL;
 			}
-			printf("Minimum distance for a match: %s\n", optarg);
 			break;
 		case 'h':
 		case '?':
@@ -138,7 +142,8 @@ static int search(struct args * args, char * file)
 	pid_t pid;
 	int ret = 0;
 
-	printf("Searching in haystack: %s\n", file);
+	if (args->verbose)
+		printf("Searching in haystack: %s\n", file);
 
 	ret = pipe(pfds);
 	if (ret < 0)
@@ -157,7 +162,7 @@ static int search(struct args * args, char * file)
 			ret = errno;
 			break;
 		case PID_CHILD: /* Child process. */
-			run_child(file, pfds);
+			run_child(file, pfds, args->verbose);
 			break;
 		default: /* Parent process. */
 			ret = run_parent(args, pfds, pid, file);
@@ -323,7 +328,8 @@ int main(int argc, char *argv[])
 	struct args args = {
 		NULL,
 		{ 0 },
-		MIN_DISTANCE
+		MIN_DISTANCE,
+		0
 	};
 
 	ret = check_arguments(argc, argv, &args);
@@ -331,6 +337,9 @@ int main(int argc, char *argv[])
 		ret = (ret == CHAR_MIN) ? 0 : -ret;
 		goto END;
 	}
+
+	if (args.verbose)
+		printf("Minimum distance for a match: %f\n", args.min_distance);
 
 	for(int i = 0; i < MAX_HAYSTACKS; i++)
 	{

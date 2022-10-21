@@ -9,6 +9,7 @@ struct args
 	char * needle;
 	char * haystacks[MAX_HAYSTACKS];
 	double min_distance;
+	int verbose;
 };
 
 
