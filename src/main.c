@@ -357,6 +357,13 @@ int main(int argc, char *argv[])
 		if (!args.haystacks[i])
 			break;
 
+		/* Reset errno to 0. If an error occurs while calling 'stat' on
+		 * this file (for exemple because it does not exist, then errno
+		 * will be set. Then it will fail in the method read_fd which
+		 * calls getline, which uses errno to differentiate between EOF
+		 * and an actual error. */
+		errno = 0;
+
 		ret = analyze_file(&args, args.haystacks[i]);
 		if (ret == -ENOMEM)
 			break;
