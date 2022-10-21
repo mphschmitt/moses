@@ -57,7 +57,7 @@ install: ${OUTPUT_DIR}/${PROG_NAME}
 	@cp $< ${DESTDIR}${INSTALL_DIR}/${PROG_NAME}
 
 .PHONY: uninstall
-uninstall: uninstall_man
+uninstall:
 	@rm -f ${DESTDIR}${INSTALL_DIR}/${PROG_NAME}
 
 .PHONY: clean
