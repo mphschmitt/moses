@@ -224,8 +224,6 @@ static int analyze_file(struct args * args, char * file)
 	if (!strcmp(file, ".") || !strcmp(file, ".."))
 		return 0;
 
-	printf("file: %s\n", file);
-
 	ret = stat(file, &statbuff);
 	if (ret < 0)
 	{
@@ -244,8 +242,6 @@ static int analyze_file(struct args * args, char * file)
 			if (!dir)
 				return -errno;
 
-			printf("Opened file %s\n", file);
-
 			path = strndup(file, strlen(file));
 			if (!path)
 			{
@@ -253,9 +249,7 @@ static int analyze_file(struct args * args, char * file)
 					strerror(errno));
 				return -errno;
 			}
-			printf("path before: %s\n", path);
 			get_path(path);
-			printf("path after: %s\n", path);
 
 			while (1)
 			{
@@ -284,10 +278,6 @@ static int analyze_file(struct args * args, char * file)
 					closedir(dir);
 					return -errno;
 				}
-
-				printf("dirent: %s, %ld\n", dirent->d_name, sizeof(dirent->d_name));
-				printf("path: %s, %ld\n", path, strlen(path));
-				printf("fullpath: %ld\n", sizeof(path));
 
 				strncat(fullpath, path, strlen(path));
 				if (path[strlen(fullpath) - 1] != '/')
