@@ -292,7 +292,15 @@ static int analyze_file(struct args * args, char * file)
 					fullpath[strlen(fullpath)] = '/';
 				strncat(fullpath, dirent->d_name, strlen(fullpath));
 
-				analyze_file(args, fullpath);
+				ret = analyze_file(args, fullpath);
+				if (ret < 0)
+				{
+					printf("ici.\n");
+					free(fullpath);
+					free(path);
+					closedir(dir);
+					return ret;
+				}
 
 				free(fullpath);
 			}
